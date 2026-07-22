@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Undertone</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0088b0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Undertone">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" href="./icon-512.png">
+<link rel="apple-touch-icon" href="./icon-512.png">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="./styles.css">
+  <style>
+    @keyframes fadeIn { from { opacity:0; transform:translateY(6px);} to { opacity:1; transform:translateY(0);} }
+    body { margin:0; }
+  </style>
+</helmet>
+<div style="display:flex;flex-direction:column;height:100dvh;width:100vw;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);overflow:hidden">
+
+    <sc-if value="{{showHome}}" hint-placeholder-val="{{true}}">
+      <div style="flex:1;overflow:auto;padding:var(--space-6) var(--space-4) var(--space-4)">
+        <h6 class="text-muted" style="margin-bottom:2px">{{todayLabel}}</h6>
+        <h1 style="margin-bottom:var(--space-4)">Undertone</h1>
+
+        <sc-if value="{{showReminderBanner}}" hint-placeholder-val="{{false}}">
+          <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:var(--space-3) var(--space-4);display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);margin-bottom:var(--space-3)">
+            <div>
+              <div style="font-family:var(--font-heading);font-weight:600;font-size:14px">{{bannerTitle}}</div>
+              <div class="text-muted" style="font-size:12px">{{bannerSub}}</div>
+            </div>
+            <button class="btn btn-primary" style="font-size:12px;padding:6px 12px;flex:none" onClick="{{bannerAction}}">Start</button>
+          </div>
+        </sc-if>
+        <div style="text-align:right;margin-bottom:var(--space-4)">
+          <button class="btn btn-ghost" style="font-size:11px;padding:0" onClick="{{toggleReminders}}">{{reminderToggleLabel}}</button>
+        </div>
+
+        <h3 style="margin-bottom:2px">Log a Feeling</h3>
+        <p class="text-muted" style="font-size:13px;margin-bottom:var(--space-3)">Tap what's closest to it right now</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-bottom:var(--space-6)">
+          <sc-for list="{{emotionChips}}" as="c" hint-placeholder-count="7">
+            <div style="background:{{c.color}};border-radius:var(--radius-lg);padding:var(--space-4);cursor:pointer;min-height:76px;display:flex;align-items:flex-end" onClick="{{c.onClick}}">
+              <span style="font-family:var(--font-heading);font-weight:600;font-size:16px;color:var(--color-bg)">{{c.name}}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <p class="text-muted" style="font-size:13px;margin-bottom:2px">{{entriesCount}} entries logged</p>
+        <div style="display:flex;flex-direction:column">
+          <sc-for list="{{minorActions}}" as="item" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-2) 0;cursor:pointer" onClick="{{item.onClick}}">
+              <span style="font-size:14px">{{item.title}}</span>
+              <span style="color:var(--color-accent)">&rsaquo;</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{showRoutine}}" hint-placeholder-val="{{false}}">
+      <div style="display:flex;flex-direction:column;height:100%">
+        <div style="padding:var(--space-4) var(--space-4) var(--space-2);display:flex;align-items:center;gap:var(--space-2)">
+          <button class="btn btn-ghost" onClick="{{onBack}}" style="padding-inline:0">&lsaquo; {{backLabel}}</button>
+        </div>
+        <div style="height:2px;background:var(--color-divider);margin:0 var(--space-4)">
+          <div style="height:100%;background:var(--color-accent);width:{{progressPct}}"></div>
+        </div>
+        <div style="flex:1;overflow:auto;padding:var(--space-4) var(--space-4) 0;animation:fadeIn .2s ease">
+          <h6 class="text-muted" style="margin-bottom:var(--space-2)">{{routineTitle}} &middot; {{progressLabel}}</h6>
+          <h3 style="margin-bottom:var(--space-4)">{{qText}}</h3>
+
+          <sc-if value="{{isTextQ}}" hint-placeholder-val="{{true}}">
+            <div class="field">
+              <textarea class="input" rows="6" placeholder="Write your answer&hellip;" value="{{textVal}}" onChange="{{onTextChange}}"></textarea>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{isTasksQ}}" hint-placeholder-val="{{false}}">
+            <div class="field"><label>Task 1</label><input class="input" value="{{task1}}" onChange="{{onTask1}}" placeholder="First priority"></div>
+            <div class="field" style="margin-top:var(--space-3)"><label>Task 2</label><input class="input" value="{{task2}}" onChange="{{onTask2}}" placeholder="Second priority"></div>
+            <div class="field" style="margin-top:var(--space-3)"><label>Task 3</label><input class="input" value="{{task3}}" onChange="{{onTask3}}" placeholder="Third priority"></div>
+          </sc-if>
+
+          <sc-if value="{{isFeelingQ}}" hint-placeholder-val="{{false}}">
+            <p class="text-muted" style="font-size:13px">Pick two base emotions, then narrow each down to how it really feels.</p>
+            <button class="btn btn-primary btn-block" onClick="{{openFeeling}}">Open the Feeling Chart</button>
+          </sc-if>
+        </div>
+        <div style="display:flex;gap:var(--space-2);padding:var(--space-4)">
+          <sc-if value="{{isNotFeelingQ}}" hint-placeholder-val="{{true}}">
+            <button class="btn btn-primary btn-block" onClick="{{onNext}}">Next</button>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{showRoutineDone}}" hint-placeholder-val="{{false}}">
+      <div style="flex:1;overflow:auto;padding:var(--space-6) var(--space-4);animation:fadeIn .2s ease">
+        <h6 class="text-muted">Complete</h6>
+        <h2 style="margin-bottom:var(--space-4)">{{doneTitle}}</h2>
+        <p class="text-muted" style="font-size:13px;margin-bottom:var(--space-2)">Feelings logged</p>
+        <sc-for list="{{doneFeelings}}" as="p" hint-placeholder-count="2">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:var(--space-2);flex-wrap:wrap">
+            <span class="tag" style="background:{{p.color}};color:var(--color-bg)">{{p.base}}</span>
+            <span class="tag tag-outline">{{p.tier2}}</span>
+            <span class="tag tag-neutral">{{p.tier3}}</span>
+          </div>
+        </sc-for>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);margin-top:var(--space-6)">
+          <button class="btn btn-primary btn-block" onClick="{{goHome}}">Back to Home</button>
+          <button class="btn btn-secondary btn-block" onClick="{{goHistory}}">View History</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{showFeeling}}" hint-placeholder-val="{{false}}">
+      <div style="display:flex;flex-direction:column;height:100%">
+        <div style="padding:var(--space-4) var(--space-4) var(--space-2)">
+          <button class="btn btn-ghost" style="padding-inline:0;color:{{fAccent}}" onClick="{{onFeelingBack}}">&lsaquo; Back</button>
+        </div>
+        <div style="flex:1;overflow:auto;padding:0 var(--space-4);animation:fadeIn .2s ease">
+          <h6 class="text-muted" style="margin-bottom:var(--space-2)">Feeling Chart</h6>
+
+          <sc-if value="{{fShowBase}}" hint-placeholder-val="{{true}}">
+            <h3 style="margin-bottom:var(--space-1)">Which base emotion is closest?</h3>
+            <p class="text-muted" style="font-size:13px;margin-bottom:var(--space-4)">{{fStepLabel}}</p>
+            <sc-for list="{{fBaseOptions}}" as="o" hint-placeholder-count="7">
+              <div style="padding:var(--space-2) var(--space-3);margin-bottom:6px;border-radius:var(--radius-md);background:{{o.color}};font-family:var(--font-heading);font-weight:600;font-size:16px;color:var(--color-bg);cursor:pointer" onClick="{{o.onClick}}">{{o.name}}</div>
+            </sc-for>
+          </sc-if>
+
+          <sc-if value="{{fShowRefine}}" hint-placeholder-val="{{false}}">
+            <h3 style="margin-bottom:var(--space-1);color:{{fAccent}}">Are you feeling&hellip;</h3>
+            <p class="text-muted" style="font-size:13px;margin-bottom:var(--space-3)">Refining {{fActiveBase}}</p>
+            <sc-for list="{{fTier2Options}}" as="o" hint-placeholder-count="6">
+              <label class="radio" style="display:flex;padding:var(--space-2) 0" onClick="{{o.onClick}}">
+                <span class="dot"></span>{{o.name}}
+              </label>
+            </sc-for>
+            <sc-if value="{{fModeLog}}" hint-placeholder-val="{{false}}">
+              <button class="btn btn-secondary btn-block" style="margin-top:var(--space-3)" onClick="{{skipAtRefine}}">Keep it as {{fActiveBase}} &mdash; describe what happened</button>
+            </sc-if>
+          </sc-if>
+
+          <sc-if value="{{fShowDeepest}}" hint-placeholder-val="{{false}}">
+            <h3 style="margin-bottom:var(--space-1);color:{{fAccent}}">Which fits best?</h3>
+            <p class="text-muted" style="font-size:13px;margin-bottom:var(--space-3)">The deepest layer of it</p>
+            <sc-for list="{{fTier3Options}}" as="o" hint-placeholder-count="2">
+              <label class="radio" style="display:flex;padding:var(--space-2) 0" onClick="{{o.onClick}}">
+                <span class="dot"></span>{{o.name}}
+              </label>
+            </sc-for>
+            <sc-if value="{{fModeLog}}" hint-placeholder-val="{{false}}">
+              <button class="btn btn-secondary btn-block" style="margin-top:var(--space-3)" onClick="{{skipAtDeepest}}">Keep it as {{fActiveTier2}} &mdash; describe what happened</button>
+            </sc-if>
+          </sc-if>
+
+          <sc-if value="{{fShowNote}}" hint-placeholder-val="{{false}}">
+            <h3 style="margin-bottom:var(--space-1);color:{{fAccent}}">Describe what happened</h3>
+            <p class="text-muted" style="font-size:13px;margin-bottom:var(--space-3)">Optional &mdash; helps you remember later</p>
+            <textarea class="input" rows="6" placeholder="What happened?" value="{{lNote}}" onChange="{{onLNoteChange}}"></textarea>
+          </sc-if>
+
+          <sc-if value="{{fShowSummary}}" hint-placeholder-val="{{false}}">
+            <h3 style="margin-bottom:var(--space-4)">Here&rsquo;s what you&rsquo;re feeling</h3>
+            <sc-for list="{{fSummaryPicks}}" as="p" hint-placeholder-count="2">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:var(--space-3);flex-wrap:wrap">
+                <span class="tag" style="background:{{p.color}};color:var(--color-bg)">{{p.base}}</span>
+                <span class="tag tag-outline">{{p.tier2}}</span>
+                <span class="tag tag-neutral">{{p.tier3}}</span>
+              </div>
+            </sc-for>
+          </sc-if>
+        </div>
+        <sc-if value="{{fShowFooterAction}}" hint-placeholder-val="{{false}}">
+          <div style="padding:var(--space-4)">
+            <button class="btn btn-block" style="background:{{fAccent}};color:var(--color-bg)" onClick="{{onFeelingDone}}">{{fFooterLabel}}</button>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{showLogDone}}" hint-placeholder-val="{{false}}">
+      <div style="flex:1;overflow:auto;padding:var(--space-6) var(--space-4);animation:fadeIn .2s ease">
+        <h6 class="text-muted">Logged</h6>
+        <h2 style="margin-bottom:var(--space-4)">Moment saved</h2>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:var(--space-4);flex-wrap:wrap">
+          <span class="tag" style="background:{{logDoneEntry.color}};color:var(--color-bg)">{{logDoneEntry.feelings.0.base}}</span>
+          <span class="tag tag-outline">{{logDoneEntry.feelings.0.tier2}}</span>
+          <span class="tag tag-neutral">{{logDoneEntry.feelings.0.tier3}}</span>
+        </div>
+        <p class="text-muted" style="font-size:13px">{{logDoneEntry.note}}</p>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);margin-top:var(--space-6)">
+          <button class="btn btn-primary btn-block" onClick="{{goHome}}">Back to Home</button>
+          <button class="btn btn-secondary btn-block" onClick="{{goHistory}}">View History</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{showInsights}}" hint-placeholder-val="{{false}}">
+      <div style="display:flex;flex-direction:column;height:100%">
+        <div style="padding:var(--space-4) var(--space-4) var(--space-2)">
+          <button class="btn btn-ghost" onClick="{{goHome}}" style="padding-inline:0">&lsaquo; Home</button>
+        </div>
+        <div style="flex:1;overflow:auto;padding:0 var(--space-4) var(--space-4);animation:fadeIn .2s ease">
+          <h6 class="text-muted" style="margin-bottom:2px">{{insightsTitle}}</h6>
+          <h2 style="margin-bottom:var(--space-1)">{{periodLabel}}</h2>
+          <p class="text-muted" style="font-size:13px;margin-bottom:var(--space-4)">{{entriesInPeriod}} moments logged</p>
+
+          <sc-if value="{{insightsEmpty}}" hint-placeholder-val="{{false}}">
+            <p class="text-muted" style="font-size:14px">No entries yet for this period &mdash; log a feeling or complete a check-in to start building your picture.</p>
+          </sc-if>
+
+          <p class="text-muted" style="font-size:12px;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:var(--space-2)">The emotional wheel &mdash; tap one</p>
+          <div style="margin-bottom:var(--space-5)">
+            <sc-for list="{{emotionBars}}" as="b" hint-placeholder-count="7">
+              <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:8px;cursor:pointer;padding:2px 4px;margin-inline:-4px;border-radius:var(--radius-sm);background:{{b.rowBg}}" onClick="{{b.onClick}}">
+                <span style="width:70px;font-size:12px;flex:none;font-weight:{{b.nameWeight}}">{{b.name}}</span>
+                <div style="flex:1;height:8px;background:var(--color-divider);border-radius:4px;overflow:hidden">
+                  <div style="height:100%;width:{{b.pct}};background:{{b.color}}"></div>
+                </div>
+                <span class="text-muted" style="width:18px;text-align:right;font-size:12px;flex:none">{{b.count}}</span>
+              </div>
+            </sc-for>
+          </div>
+
+          <sc-if value="{{hasDominant}}" hint-placeholder-val="{{false}}">
+            <div style="margin-bottom:var(--space-4)">
+              <p class="text-muted" style="font-size:12px;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">{{dominantSectionLabel}}</p>
+              <h3 style="color:{{dominantColor}};margin-bottom:2px">{{dominantName}}</h3>
+              <p class="text-muted" style="font-size:13px">{{dominantCount}} of {{entriesInPeriod}} logged moments</p>
+            </div>
+
+            <p class="text-muted" style="font-size:12px;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:var(--space-2)">When it happened</p>
+            <sc-if value="{{hasTriggeredEntries}}" hint-placeholder-val="{{true}}">
+              <sc-for list="{{triggeredEntries}}" as="e" hint-placeholder-count="3">
+                <div class="card" style="margin-bottom:var(--space-2)">
+                  <div class="card-kicker">{{e.type}} &middot; {{e.date}}</div>
+                  <p class="card-body">{{e.note}}</p>
+                </div>
+              </sc-for>
+            </sc-if>
+            <sc-if value="{{noTriggeredEntries}}" hint-placeholder-val="{{false}}">
+              <p class="text-muted" style="font-size:13px">No {{dominantName}} moments logged this period.</p>
+            </sc-if>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{showHistory}}" hint-placeholder-val="{{false}}">
+      <div style="display:flex;flex-direction:column;height:100%">
+        <div style="padding:var(--space-4) var(--space-4) var(--space-2)">
+          <button class="btn btn-ghost" onClick="{{goHome}}" style="padding-inline:0">&lsaquo; Home</button>
+        </div>
+        <div style="flex:1;overflow:auto;padding:0 var(--space-4) var(--space-4)">
+          <h3 style="margin-bottom:var(--space-4)">History</h3>
+          <sc-for list="{{historyEntries}}" as="e" hint-placeholder-count="4">
+            <div class="card" style="margin-bottom:var(--space-3)">
+              <div class="card-kicker">{{e.type}} &middot; {{e.date}}</div>
+              <p class="card-body">{{e.note}}</p>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <sc-for list="{{e.feelings}}" as="fl" hint-placeholder-count="1">
+                  <span class="tag" style="background:{{fl.color}};color:var(--color-bg)">{{fl.tier3}}</span>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.EMOTIONS = {
+      Happy: { tier2: { Optimistic:['Hopeful','Inspired'], Trusting:['Sensitive','Intimate'], Peaceful:['Loving','Thankful'], Powerful:['Courageous','Creative'], Accepted:['Respected','Valued'], Proud:['Successful','Confident'], Interested:['Curious','Inquisitive'], Content:['Joyful','Free'], Playful:['Cheeky','Aroused'] } },
+      Surprised: { tier2: { Excited:['Energetic','Eager'], Amazed:['Awe','Astonished'], Confused:['Perplexed','Disillusioned'], Startled:['Dismayed','Shocked'] } },
+      Bad: { tier2: { Tired:['Unfocused','Sleepy'], Stressed:['Out of control','Overwhelmed'], Busy:['Rushed','Pressured'], Bored:['Apathetic','Indifferent'] } },
+      Fearful: { tier2: { Scared:['Helpless','Frightened'], Anxious:['Overwhelmed','Worried'], Insecure:['Inadequate','Inferior'], Weak:['Worthless','Insignificant'], Rejected:['Excluded','Persecuted'], Threatened:['Nervous','Exposed'] } },
+      Angry: { tier2: { 'Let down':['Betrayed','Resentful'], Humiliated:['Disrespectful','Ridiculed'], Bitter:['Indignant','Violated'], Mad:['Furious','Jealous'], Aggressive:['Provoked','Hostile'], Frustrated:['Infuriated','Annoyed'], Distant:['Withdrawn','Numb'], Critical:['Skeptical','Dismissive'] } },
+      Disgusted: { tier2: { Disapproving:['Judgmental','Embarrassed'], Disappointed:['Appalled','Revolted'], Awful:['Nauseated','Detestable'], Repelled:['Horrified','Hesitant'] } },
+      Sad: { tier2: { Hurt:['Embarrassed','Disappointed'], Depressed:['Inferior','Empty'], Guilty:['Remorseful','Ashamed'], Despair:['Powerless','Grief'], Vulnerable:['Fragile','Victimized'], Lonely:['Abandoned','Isolated'] } },
+    };
+    this.BASES = Object.keys(this.EMOTIONS);
+    this.COLORS = {
+      Happy: 'oklch(78% 0.14 95)',
+      Surprised: 'oklch(72% 0.16 55)',
+      Bad: 'oklch(60% 0.02 260)',
+      Fearful: 'oklch(55% 0.13 300)',
+      Angry: 'oklch(58% 0.19 25)',
+      Disgusted: 'oklch(58% 0.12 150)',
+      Sad: 'oklch(55% 0.12 240)',
+    };
+    this.MORNING = [
+      { key:'gratitude', q:'What am I grateful for today?', type:'text' },
+      { key:'tasks', q:'What three main tasks do I need to accomplish today?', type:'tasks' },
+      { key:'intention', q:'What is my main intention today?', type:'text' },
+      { key:'affirmation', q:'What affirmation can I live by today?', type:'text' },
+      { key:'feeling', q:'What am I feeling this morning?', type:'feeling' },
+    ];
+    this.EVENING = [
+      { key:'wentwell', q:'What went well today?', type:'text' },
+      { key:'better', q:'What could have gone better today?', type:'text' },
+      { key:'challenges', q:'What challenges did I overcome today?', type:'text' },
+      { key:'changes', q:'What changes can I make tomorrow?', type:'text' },
+      { key:'feeling', q:'What am I feeling at the end of the day?', type:'feeling' },
+    ];
+
+    this.state = {
+      screen: 'home',
+      remindersOn: this.loadReminders(),
+      routineMode: null,
+      stepIndex: 0,
+      answers: {},
+      tasks: ['','',''],
+      feeling: null,
+      logNote: '',
+      insightsSelected: null,
+      log: this.loadLog(),
+    };
+
+    this.goHome = this.goHome.bind(this);
+    this.goHistory = this.goHistory.bind(this);
+    this.startMorning = () => this.setState({ screen:'routine', routineMode:'morning', stepIndex:0, answers:{}, tasks:['','',''] });
+    this.startEvening = () => this.setState({ screen:'routine', routineMode:'evening', stepIndex:0, answers:{} });
+    this.startMonthly = () => this.setState({ screen:'insights', insightsMode:'monthly', insightsSelected:null });
+    this.startYearly = () => this.setState({ screen:'insights', insightsMode:'yearly', insightsSelected:null });
+    this.routineBack = this.routineBack.bind(this);
+    this.routineNext = this.routineNext.bind(this);
+    this.feelingBack = this.feelingBack.bind(this);
+    this.finishFeeling = this.finishFeeling.bind(this);
+    this.toggleReminders = () => this.setState(s => { const v = !s.remindersOn; this.saveReminders(v); return { remindersOn: v }; });
+  }
+
+  getSeedLog() {
+    return [
+      { id:1, date:'Jul 18', ts:new Date(2026,6,18), type:'Morning Check-in', note:'Grateful for a slow coffee and a quiet inbox.', feelings:[{base:'Happy',tier2:'Content',tier3:'Joyful',color:this.COLORS.Happy}] },
+      { id:2, date:'Jul 15', ts:new Date(2026,6,15), type:'Feeling Log', note:'Deadline moved up with no warning.', feelings:[{base:'Angry',tier2:'Frustrated',tier3:'Infuriated',color:this.COLORS.Angry}] },
+      { id:3, date:'Jul 12', ts:new Date(2026,6,12), type:'Evening Check-in', note:'Finally finished the proposal I kept avoiding.', feelings:[{base:'Happy',tier2:'Proud',tier3:'Successful',color:this.COLORS.Happy}] },
+      { id:5, date:'Jul 9', ts:new Date(2026,6,9), type:'Feeling Log', note:'Waited all day to hear back and never did.', feelings:[{base:'Fearful',tier2:'Anxious',tier3:'Worried',color:this.COLORS.Fearful}] },
+      { id:6, date:'Jul 5', ts:new Date(2026,6,5), type:'Morning Check-in', note:'Excited to start a new project today.', feelings:[{base:'Happy',tier2:'Playful',tier3:'Cheeky',color:this.COLORS.Happy}] },
+      { id:4, date:'Jun 30', ts:new Date(2026,5,30), type:'Evening Check-in', note:'Reconnected with an old friend after years.', feelings:[{base:'Happy',tier2:'Peaceful',tier3:'Thankful',color:this.COLORS.Happy}] },
+      { id:7, date:'Jun 22', ts:new Date(2026,5,22), type:'Feeling Log', note:'Plans fell through again at the last minute.', feelings:[{base:'Sad',tier2:'Lonely',tier3:'Isolated',color:this.COLORS.Sad}] },
+    ];
+  }
+  loadLog() {
+    try {
+      const raw = localStorage.getItem('undertone_log');
+      if (!raw) return this.getSeedLog();
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed) || parsed.length === 0) return this.getSeedLog();
+      return parsed.map(e => ({ ...e, ts: e.ts ? new Date(e.ts) : null }));
+    } catch (err) { return this.getSeedLog(); }
+  }
+  saveLog(log) { try { localStorage.setItem('undertone_log', JSON.stringify(log)); } catch (err) {} }
+  loadReminders() {
+    try { const raw = localStorage.getItem('undertone_reminders'); return raw === null ? true : JSON.parse(raw); } catch (err) { return true; }
+  }
+  saveReminders(val) { try { localStorage.setItem('undertone_reminders', JSON.stringify(val)); } catch (err) {} }
+
+  today() { return new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' }); }
+  modeLabel(mode) { return { morning:'Morning Check-in', evening:'Evening Check-in' }[mode]; }
+  getQuestions(mode) { return { morning:this.MORNING, evening:this.EVENING }[mode]; }
+  periodEntries(mode) {
+    const now = new Date();
+    return this.state.log.filter(e => e.ts && (mode === 'monthly'
+      ? (e.ts.getFullYear() === now.getFullYear() && e.ts.getMonth() === now.getMonth())
+      : e.ts.getFullYear() === now.getFullYear()));
+  }
+  emotionTally(entries) {
+    const counts = {}; this.BASES.forEach(b => counts[b] = 0);
+    entries.forEach(e => (e.feelings || []).forEach(f => { if (counts[f.base] !== undefined) counts[f.base]++; }));
+    return counts;
+  }
+  summaryNote(mode, answers) {
+    if (mode === 'morning') return answers.gratitude || answers.intention || '';
+    if (mode === 'evening') return answers.wentwell || '';
+    const qs = this.getQuestions(mode);
+    return answers[qs[0].key] || '';
+  }
+  withColor(pick) { return pick ? { ...pick, color: this.COLORS[pick.base] } : pick; }
+
+  goHome() { this.setState({ screen:'home' }); }
+  goHistory() { this.setState({ screen:'history' }); }
+
+  setTextAnswer(key, val) { this.setState(s => ({ answers: { ...s.answers, [key]: val } })); }
+  setTask(idx, val) { this.setState(s => { const t=[...s.tasks]; t[idx]=val; return { tasks:t }; }); }
+
+  routineBack() {
+    if (this.state.stepIndex === 0) { this.goHome(); return; }
+    this.setState({ stepIndex: this.state.stepIndex - 1 });
+  }
+  routineNext() {
+    const qs = this.getQuestions(this.state.routineMode);
+    if (this.state.stepIndex + 1 >= qs.length) { this.completeRoutine(); return; }
+    this.setState({ stepIndex: this.state.stepIndex + 1 });
+  }
+  completeRoutine() {
+    const { routineMode, answers } = this.state;
+    const entry = { id: Date.now(), date: this.today(), ts: new Date(), type: this.modeLabel(routineMode), note: this.summaryNote(routineMode, answers), feelings: (answers.feeling || []).map(p => this.withColor(p)) };
+    this.setState(s => { const log = [entry, ...s.log]; this.saveLog(log); return { screen:'routineDone', log }; });
+  }
+
+  openFeelingChart(mode, presetBase) {
+    const maxBases = mode === 'routine' ? 2 : 1;
+    let picks = [], substep = 'base';
+    if (presetBase) { picks = [{ base: presetBase, tier2:null, tier3:null }]; substep = 'refine'; }
+    this.setState({ screen:'feeling', logNote:'', feeling: { mode, maxBases, picks, substep } });
+  }
+  pickBase(name) {
+    const f = this.state.feeling;
+    if (f.picks.find(p => p.base === name)) return;
+    this.setState({ feeling: { ...f, picks: [...f.picks, { base:name, tier2:null, tier3:null }], substep:'refine' } });
+  }
+  pickTier2(name) {
+    const f = this.state.feeling; const picks = [...f.picks];
+    picks[picks.length-1] = { ...picks[picks.length-1], tier2:name };
+    this.setState({ feeling: { ...f, picks, substep:'deepest' } });
+  }
+  pickTier3(name) {
+    const f = this.state.feeling; const picks = [...f.picks];
+    picks[picks.length-1] = { ...picks[picks.length-1], tier3:name };
+    if (f.mode === 'log') { this.setState({ feeling: { ...f, picks, substep:'note' } }); return; }
+    const needMore = picks.length < f.maxBases;
+    this.setState({ feeling: { ...f, picks, substep: needMore ? 'base' : 'summary' } });
+  }
+  skipAtRefine() {
+    const f = this.state.feeling;
+    this.setState({ feeling: { ...f, substep:'note' } });
+  }
+  skipAtDeepest() {
+    const f = this.state.feeling;
+    this.setState({ feeling: { ...f, substep:'note' } });
+  }
+  feelingBack() {
+    const f = this.state.feeling;
+    if (f.substep === 'note') { this.setState({ feeling: { ...f, substep: f.picks[f.picks.length-1].tier2 ? 'deepest' : 'refine' } }); return; }
+    if (f.substep === 'summary') { this.setState({ feeling: { ...f, substep:'deepest' } }); return; }
+    if (f.substep === 'deepest') { this.setState({ feeling: { ...f, substep:'refine' } }); return; }
+    if (f.substep === 'refine') {
+      const picks = f.picks.slice(0, -1);
+      if (picks.length === 0) { this.cancelFeeling(); return; }
+      this.setState({ feeling: { ...f, picks, substep:'base' } });
+      return;
+    }
+    this.cancelFeeling();
+  }
+  cancelFeeling() {
+    this.setState({ screen:'home', feeling:null });
+  }
+  finishFeeling() {
+    const f = this.state.feeling;
+    if (f.mode === 'routine') {
+      const newAnswers = { ...this.state.answers, feeling: f.picks };
+      const qs = this.getQuestions(this.state.routineMode);
+      if (this.state.stepIndex + 1 >= qs.length) {
+        const entry = { id: Date.now(), date: this.today(), ts: new Date(), type: this.modeLabel(this.state.routineMode), note: this.summaryNote(this.state.routineMode, newAnswers), feelings: f.picks.map(p => this.withColor(p)) };
+        this.setState(s => { const log = [entry, ...s.log]; this.saveLog(log); return { screen:'routineDone', answers:newAnswers, feeling:null, log }; });
+      } else {
+        this.setState({ answers:newAnswers, feeling:null, screen:'routine', stepIndex:this.state.stepIndex+1 });
+      }
+    } else {
+      const entry = { id: Date.now(), date: this.today(), ts: new Date(), type:'Feeling Log', note:this.state.logNote, feelings:f.picks.map(p => this.withColor(p)), color: this.COLORS[f.picks[0].base] };
+      this.setState(s => { const log = [entry, ...s.log]; this.saveLog(log); return { screen:'logDone', log, feeling:null }; });
+    }
+  }
+  setLogNote(val) { this.setState({ logNote:val }); }
+  selectInsightEmotion(name) { this.setState({ insightsSelected: name }); }
+
+  renderVals() {
+    const s = this.state;
+    const hour = new Date().getHours();
+    const isMorningTime = hour < 12, isEveningTime = hour >= 17;
+    const vals = {
+      goHome: this.goHome, goHistory: this.goHistory,
+      showHome: s.screen==='home', showRoutine: s.screen==='routine', showRoutineDone: s.screen==='routineDone',
+      showFeeling: s.screen==='feeling', showLogDone: s.screen==='logDone',
+      showHistory: s.screen==='history', showInsights: s.screen==='insights',
+      todayLabel: this.today(),
+      entriesCount: s.log.length,
+      showReminderBanner: s.remindersOn && (isMorningTime || isEveningTime),
+      bannerTitle: isMorningTime ? 'Good morning' : 'Wrapping up the day?',
+      bannerSub: isMorningTime ? "Ready for today's check-in?" : 'Take a minute for your evening check-in.',
+      bannerAction: isMorningTime ? this.startMorning : this.startEvening,
+      reminderToggleLabel: s.remindersOn ? 'Turn off daily reminders' : 'Turn on daily reminders',
+      emotionChips: this.BASES.map(b => ({ name:b, color:this.COLORS[b], onClick: () => this.openFeelingChart('log', b) })),
+      minorActions: [
+        { title:'Monthly Review', onClick:this.startMonthly },
+        { title:'Yearly Review', onClick:this.startYearly },
+        { title:'History', onClick:this.goHistory },
+      ],
+      historyEntries: s.log,
+    };
+
+    if (s.screen === 'routine') {
+      const qs = this.getQuestions(s.routineMode);
+      const q = qs[s.stepIndex];
+      vals.routineTitle = this.modeLabel(s.routineMode);
+      vals.progressLabel = (s.stepIndex+1) + ' of ' + qs.length;
+      vals.progressPct = Math.round(((s.stepIndex+1)/qs.length)*100) + '%';
+      vals.qText = q.q;
+      vals.isTextQ = q.type === 'text';
+      vals.isTasksQ = q.type === 'tasks';
+      vals.isFeelingQ = q.type === 'feeling';
+      vals.isNotFeelingQ = q.type !== 'feeling';
+      vals.textVal = s.answers[q.key] || '';
+      vals.onTextChange = (e) => this.setTextAnswer(q.key, e.target.value);
+      vals.task1 = s.tasks[0]; vals.task2 = s.tasks[1]; vals.task3 = s.tasks[2];
+      vals.onTask1 = (e) => this.setTask(0, e.target.value);
+      vals.onTask2 = (e) => this.setTask(1, e.target.value);
+      vals.onTask3 = (e) => this.setTask(2, e.target.value);
+      vals.onBack = this.routineBack;
+      vals.onNext = this.routineNext;
+      vals.backLabel = s.stepIndex === 0 ? 'Home' : 'Back';
+      vals.openFeeling = () => this.openFeelingChart('routine');
+    }
+
+    if (s.screen === 'routineDone') {
+      vals.doneTitle = this.modeLabel(s.routineMode) + ' complete';
+      vals.doneFeelings = (s.answers.feeling || []).map(p => this.withColor(p));
+    }
+
+    if (s.screen === 'feeling' && s.feeling) {
+      const f = s.feeling;
+      vals.fModeLog = f.mode === 'log';
+      vals.fShowBase = f.substep === 'base';
+      vals.fShowRefine = f.substep === 'refine';
+      vals.fShowDeepest = f.substep === 'deepest';
+      vals.fShowNote = f.substep === 'note';
+      vals.fShowSummary = f.substep === 'summary';
+      vals.fShowFooterAction = f.substep === 'summary' || f.substep === 'note';
+      vals.fFooterLabel = f.substep === 'note' ? 'Save' : 'Done';
+      vals.fStepLabel = f.mode === 'routine' ? ('Base emotion ' + (f.picks.length + (f.substep==='base'?1:0)) + ' of ' + f.maxBases) : 'One base emotion';
+      vals.fBaseOptions = this.BASES.filter(b => !f.picks.find(p => p.base===b)).map(b => ({ name:b, color:this.COLORS[b], onClick: () => this.pickBase(b) }));
+      const active = f.picks[f.picks.length-1];
+      vals.fActiveBase = active ? active.base : '';
+      vals.fActiveTier2 = active ? active.tier2 : '';
+      vals.fAccent = active ? this.COLORS[active.base] : 'var(--color-accent)';
+      vals.fTier2Options = active ? Object.keys(this.EMOTIONS[active.base].tier2).map(t => ({ name:t, onClick: () => this.pickTier2(t) })) : [];
+      vals.fTier3Options = (active && active.tier2) ? this.EMOTIONS[active.base].tier2[active.tier2].map(t => ({ name:t, onClick: () => this.pickTier3(t) })) : [];
+      vals.onFeelingBack = this.feelingBack;
+      vals.onFeelingDone = this.finishFeeling;
+      vals.skipAtRefine = () => this.skipAtRefine();
+      vals.skipAtDeepest = () => this.skipAtDeepest();
+      vals.fSummaryPicks = f.picks.map(p => this.withColor(p));
+      vals.lNote = s.logNote;
+      vals.onLNoteChange = (e) => this.setLogNote(e.target.value);
+    }
+
+    if (s.screen === 'logDone') {
+      vals.logDoneEntry = s.log[0];
+    }
+
+    if (s.screen === 'insights') {
+      const mode = s.insightsMode;
+      const entries = this.periodEntries(mode);
+      const counts = this.emotionTally(entries);
+      const total = Object.values(counts).reduce((a,b)=>a+b, 0);
+      const now = new Date();
+      vals.insightsTitle = mode === 'monthly' ? 'Monthly Review' : 'Yearly Review';
+      vals.periodLabel = mode === 'monthly' ? now.toLocaleDateString('en-US', { month:'long', year:'numeric' }) : String(now.getFullYear());
+      vals.insightsEmpty = total === 0;
+      vals.entriesInPeriod = entries.length;
+      const sorted = this.BASES.map(b => ({ name:b, count:counts[b], color:this.COLORS[b] })).sort((a,b)=>b.count-a.count);
+      const dominant = sorted[0];
+      const selectedName = s.insightsSelected || (dominant.count > 0 ? dominant.name : null);
+      vals.emotionBars = sorted.map(o => ({ ...o, pct: total ? Math.round((o.count/total)*100) + '%' : '0%',
+        onClick: () => this.selectInsightEmotion(o.name),
+        rowBg: o.name === selectedName ? 'var(--color-surface)' : 'transparent',
+        nameWeight: o.name === selectedName ? '700' : '400' }));
+      vals.hasDominant = !!selectedName;
+      vals.dominantName = selectedName;
+      vals.dominantColor = selectedName ? this.COLORS[selectedName] : '';
+      vals.dominantCount = selectedName ? counts[selectedName] : 0;
+      vals.dominantSectionLabel = (selectedName === dominant.name) ? 'Most felt' : 'Selected';
+      vals.triggeredEntries = selectedName ? entries.filter(e => (e.feelings||[]).some(f => f.base === selectedName)).slice(0, 4) : [];
+      vals.hasTriggeredEntries = vals.triggeredEntries.length > 0;
+      vals.noTriggeredEntries = !!selectedName && vals.triggeredEntries.length === 0;
+    }
+
+    return vals;
+  }
+}
+
+</script>
+</body>
+</html>
