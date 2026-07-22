@@ -267,14 +267,48 @@
           <sc-for list="{{historyEntries}}" as="e" hint-placeholder-count="4">
             <div class="card" style="margin-bottom:var(--space-3)">
               <div class="card-kicker">{{e.type}} &middot; {{e.date}}</div>
-              <p class="card-body">{{e.note}}</p>
-              <div style="display:flex;gap:6px;flex-wrap:wrap">
-                <sc-for list="{{e.feelings}}" as="fl" hint-placeholder-count="1">
-                  <span class="tag" style="background:{{fl.color}};color:var(--color-bg)">{{fl.tier3}}</span>
-                </sc-for>
+
+              <sc-if value="{{e.isEditing}}" hint-placeholder-val="{{false}}">
+                <textarea class="input" rows="3" value="{{e.editVal}}" onChange="{{e.onEditChange}}" style="margin-bottom:var(--space-2)"></textarea>
+                <div style="display:flex;gap:var(--space-2);margin-bottom:var(--space-2)">
+                  <button class="btn btn-primary" style="font-size:12px;padding:6px 12px" onClick="{{e.onSaveEdit}}">Save</button>
+                  <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onClick="{{e.onCancelEdit}}">Cancel</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{e.isEditing}}" hint-placeholder-val="{{false}}">
+              </sc-if>
+              <sc-if value="{{e.notEditing}}" hint-placeholder-val="{{true}}">
+                <p class="card-body">{{e.note}}</p>
+              </sc-if>
+
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <sc-for list="{{e.feelings}}" as="fl" hint-placeholder-count="1">
+                    <span class="tag" style="background:{{fl.color}};color:var(--color-bg)">{{fl.tier3}}</span>
+                  </sc-for>
+                </div>
+                <sc-if value="{{e.notEditing}}" hint-placeholder-val="{{true}}">
+                  <div style="display:flex;gap:var(--space-2);flex:none">
+                    <button class="btn btn-ghost" style="font-size:12px;padding:4px 8px" onClick="{{e.onStartEdit}}">Edit</button>
+                    <button class="btn btn-ghost" style="font-size:12px;padding:4px 8px;color:var(--color-accent-2-700)" onClick="{{e.onAskDelete}}">Delete</button>
+                  </div>
+                </sc-if>
               </div>
             </div>
           </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{showDeleteDialog}}" hint-placeholder-val="{{false}}">
+      <div class="dialog-backdrop">
+        <div class="dialog">
+          <div class="dialog-title">Delete this entry?</div>
+          <div class="dialog-body">This can't be undone.</div>
+          <div class="dialog-actions">
+            <button class="btn btn-ghost" onClick="{{cancelDelete}}">Cancel</button>
+            <button class="btn btn-primary" style="background:var(--color-accent-2-700)" onClick="{{confirmDelete}}">Delete</button>
+          </div>
         </div>
       </div>
     </sc-if>
@@ -330,6 +364,9 @@ class Component extends DCLogic {
       feeling: null,
       logNote: '',
       insightsSelected: null,
+      editingId: null,
+      editDraft: '',
+      deleteTargetId: null,
       log: this.loadLog(),
     };
 
@@ -395,7 +432,27 @@ class Component extends DCLogic {
   withColor(pick) { return pick ? { ...pick, color: this.COLORS[pick.base] } : pick; }
 
   goHome() { this.setState({ screen:'home' }); }
-  goHistory() { this.setState({ screen:'history' }); }
+  goHistory() { this.setState({ screen:'history', editingId:null, deleteTargetId:null }); }
+
+  startEditEntry(id) { this.setState(s => ({ editingId:id, editDraft: s.log.find(e=>e.id===id).note })); }
+  cancelEditEntry() { this.setState({ editingId:null, editDraft:'' }); }
+  setEditDraft(val) { this.setState({ editDraft: val }); }
+  saveEditEntry(id) {
+    this.setState(s => {
+      const log = s.log.map(e => e.id === id ? { ...e, note: s.editDraft } : e);
+      this.saveLog(log);
+      return { log, editingId:null, editDraft:'' };
+    });
+  }
+  askDeleteEntry(id) { this.setState({ deleteTargetId:id }); }
+  cancelDeleteEntry() { this.setState({ deleteTargetId:null }); }
+  confirmDeleteEntry() {
+    this.setState(s => {
+      const log = s.log.filter(e => e.id !== s.deleteTargetId);
+      this.saveLog(log);
+      return { log, deleteTargetId:null };
+    });
+  }
 
   setTextAnswer(key, val) { this.setState(s => ({ answers: { ...s.answers, [key]: val } })); }
   setTask(idx, val) { this.setState(s => { const t=[...s.tasks]; t[idx]=val; return { tasks:t }; }); }
@@ -503,7 +560,20 @@ class Component extends DCLogic {
         { title:'Yearly Review', onClick:this.startYearly },
         { title:'History', onClick:this.goHistory },
       ],
-      historyEntries: s.log,
+      historyEntries: s.log.map(e => ({
+        ...e,
+        isEditing: s.editingId === e.id,
+        notEditing: s.editingId !== e.id,
+        editVal: s.editingId === e.id ? s.editDraft : '',
+        onEditChange: (ev) => this.setEditDraft(ev.target.value),
+        onStartEdit: () => this.startEditEntry(e.id),
+        onCancelEdit: () => this.cancelEditEntry(),
+        onSaveEdit: () => this.saveEditEntry(e.id),
+        onAskDelete: () => this.askDeleteEntry(e.id),
+      })),
+      showDeleteDialog: !!s.deleteTargetId,
+      cancelDelete: () => this.cancelDeleteEntry(),
+      confirmDelete: () => this.confirmDeleteEntry(),
     };
 
     if (s.screen === 'routine') {
